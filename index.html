@@ -929,8 +929,10 @@ const MAYO_CLIENTES = [
 ];
 
 async function seedMayo2026() {
-  if (localStorage.getItem('mayo2026_seed')) return;
   try {
+    // Verificar en Firebase si ya hay clientes de Mayo — no depende de localStorage
+    const existing = await colRef.where('mes','==','Mayo 2026').limit(1).get();
+    if (!existing.empty) return; // Ya tiene datos, no importar
     const batch = db.batch();
     MAYO_CLIENTES.forEach((c, i) => {
       const ref = colRef.doc();
@@ -942,36 +944,27 @@ async function seedMayo2026() {
       });
     });
     await batch.commit();
-    localStorage.setItem('mayo2026_seed', '1');
     console.log('✅ Mayo 2026 importado');
   } catch(e) { console.error('Seed Mayo:', e); }
 }
 
 async function seedAbril2026() {
-  // Solo corre una vez
-  if (localStorage.getItem('abril2026_seed')) return;
   try {
+    const existing = await colRef.where('mes','==','Abril 2026').limit(1).get();
+    if (!existing.empty) return;
     const batch = db.batch();
     ABRIL_CLIENTES.forEach((c, i) => {
       const ref = colRef.doc();
       batch.set(ref, {
-        cliente:  c.cliente,
-        curp:     c.curp,
-        afore:    'Sin asignar',
-        alta:     '',
-        status:   c.status,
-        pagado:   false,
-        mes:      'Abril 2026',
-        orden:    i,
+        cliente: c.cliente, curp: c.curp, afore: 'Sin asignar',
+        alta: '', status: c.status, pagado: false,
+        mes: 'Abril 2026', orden: i,
         creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
       });
     });
     await batch.commit();
-    localStorage.setItem('abril2026_seed', '1');
-    console.log('✅ 20 clientes de Abril 2026 importados');
-  } catch(e) {
-    console.error('Error seed Abril:', e);
-  }
+    console.log('✅ Abril 2026 importado');
+  } catch(e) { console.error('Seed Abril:', e); }
 }
 
 /* ══════════════════════════════════════
