@@ -381,50 +381,7 @@ const S={
 };
 
 /* DATOS INICIALES */
-const ABRIL_CLIENTES = [
-  {cliente:'Evaristo Carbajal',           curp:'CAME901117HVZRNV06', status:'cancelado'},
-  {cliente:'Rey David Soto',              curp:'BASR921229HVZRTY00', status:'desactualizado'},
-  {cliente:'Maria del Carmen Navarrete',  curp:'NAEC800522MVZVSR01', status:'cancelado'},
-  {cliente:'Rigoberto Cruz Lopez',        curp:'CULR830604HCSRPG02', status:'desactualizado'},
-  {cliente:'Julio Huerta Hernandez',      curp:'HUHJ941008HVZRRL15', status:'cancelado'},
-  {cliente:'Jose Antonio Reyes',          curp:'REGA720504HVZYNN05', status:'cancelado'},
-  {cliente:'Miguel Angel Sosa Hernandez', curp:'SOHM921128HVZSRG03', status:'desactualizado'},
-  {cliente:'Samuel Vazquez Galicia',      curp:'VAGS781031HPLZLM06', status:'desactualizado'},
-  {cliente:'Iray Sanchez Trujillo',       curp:'SATI761013MVZNRR06', status:'desactualizado'},
-  {cliente:'Paula Quezada Cortez',        curp:'QUCP710622MDFZRL08', status:'desactualizado'},
-  {cliente:'Oscar Colorado Valdivia',     curp:'COVO780224HVZLLS00', status:'cancelado'},
-  {cliente:'David Nery Flores',           curp:'NEFD861005HVZRLV00', status:'desactualizado'},
-  {cliente:'Natanael',                    curp:'RIDN860810HVZNMT00', status:'desactualizado'},
-  {cliente:'Arturo Ruiz',                 curp:'RUPA770706HVZZRR01', status:'actualizado'},
-  {cliente:'Domingo Salamanca',           curp:'SAND931007HVZLVM00', status:'enviado'},
-  {cliente:'Francisco Amador',            curp:'AAQF900903HVZMVR03', status:'actualizado'},
-  {cliente:'Aurelio Vallejo',             curp:'VXCA780920HVZLRR06', status:'actualizado'},
-  {cliente:'Francisco Solis',             curp:'SOGI831203HVZLRS05', status:'actualizado'},
-  {cliente:'Ivan Domingo',                curp:'DORI930426HVZMMV00', status:'desactualizado'},
-  {cliente:'Ricardo Cazarin',             curp:'CAHR990429HOCZSC09', status:'desactualizado'},
-];
 
-const MAYO_CLIENTES = [
-  {cliente:'Aurelio Ramos Cerrano',  curp:'RASA980925HVZMRR06'},
-  {cliente:'Luis Ruben Cuellqs',     curp:'CUML870708HVZLRS08'},
-  {cliente:'Diana Lisbeth',          curp:'RUHD800411MVZZRN00'},
-  {cliente:'Eduardo Sosa del Valle', curp:'SOVE781013HVZSLD06'},
-  {cliente:'Getulio Rodriguez',      curp:'ROMG810718HVZDNT02'},
-  {cliente:'Luis Javier Solano',     curp:'SOAL960415HVZLSS01'},
-  {cliente:'Erika Ruiz',             curp:'RUCE830214MVZZRR06'},
-  {cliente:'Rodrigo Regueyra',       curp:'REMR941019HVZGLD06'},
-  {cliente:'Margarita Herrera',      curp:'HEGM680802MTSRNR00'},
-  {cliente:'Carlos Daniel Moreno',   curp:'MOCC960721HVZRRR05'},
-  {cliente:'Vicente Garcia',         curp:'GAJV910831HVZRMC02'},
-  {cliente:'Jose Francisco',         curp:'GAPF751226HVZRRR08'},
-  {cliente:'Cesar Toto Lima',        curp:'TOLC890115HVZTMS03'},
-  {cliente:'Aldo Baldo',             curp:'BARA970707HVZLDL01'},
-  {cliente:'Marlen Perez',           curp:'PEHM991116MVZRRR00'},
-  {cliente:'Prudencio Lopez',        curp:'LOMP681027HVZPRR00'},
-  {cliente:'Eriberto Lopez',         curp:'LOLE881029HVZPZR08'},
-  {cliente:'Jose Luis Atilano',      curp:'AIRL730602HVZTDS05'},
-  {cliente:'Anguelli de Jesus',      curp:'VAHA990314MVZLRN08'},
-];
 
 /* ESTADO */
 let db, colRef, auth;
@@ -521,7 +478,7 @@ async function doGoogleLogin(){
 /* FIRESTORE LISTENER */
 function startListener(){
   if(unsub)unsub();
-  unsub=colRef.orderBy('creadoEn','asc').onSnapshot(snap=>{
+  unsub=colRef.orderBy('orden','asc').onSnapshot(snap=>{
     const newIds=new Set();
     snap.docChanges().forEach(ch=>{if(ch.type==='added'&&knownIds.size>0)newIds.add(ch.doc.id);});
     clients=[];
@@ -535,9 +492,6 @@ function startListener(){
     document.getElementById('sync').classList.remove('saving','error');
     renderTabs();
     render(newIds);
-    // Seed datos iniciales una sola vez
-    seedAbril2026();
-    seedMayo2026();
   },err=>{
     console.error(err);
     document.getElementById('sync').classList.add('error');
@@ -548,38 +502,21 @@ function startListener(){
 function mesNow(){const n=new Date();return`${MESES[n.getMonth()]} ${n.getFullYear()}`;}
 
 /* SEED DATOS */
-async function seedAbril2026(){
-  if(localStorage.getItem('abril2026_seed'))return;
-  try{
-    const batch=db.batch();
-    ABRIL_CLIENTES.forEach(c=>{
-      const ref=colRef.doc();
-      batch.set(ref,{cliente:c.cliente,curp:c.curp,afore:'Sin asignar',alta:'',status:c.status,pagado:false,mes:'Abril 2026',creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
-    });
-    await batch.commit();
-    localStorage.setItem('abril2026_seed','1');
-    console.log('✅ Abril 2026 importado');
-  }catch(e){console.error('Seed Abril:',e);}
 }
 
-async function seedMayo2026(){
-  if(localStorage.getItem('mayo2026_seed'))return;
-  try{
-    const batch=db.batch();
-    MAYO_CLIENTES.forEach(c=>{
-      const ref=colRef.doc();
-      batch.set(ref,{cliente:c.cliente,curp:c.curp,afore:'Sin asignar',alta:'',status:'desactualizado',pagado:false,mes:'Mayo 2026',creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
-    });
-    await batch.commit();
-    localStorage.setItem('mayo2026_seed','1');
-    console.log('✅ Mayo 2026 importado');
-  }catch(e){console.error('Seed Mayo:',e);}
 }
 
 /* CRUD */
 function setSaving(){document.getElementById('sync').className='saving';}
 function setOk(){document.getElementById('sync').className='';}
-async function dbAdd(obj){setSaving();await colRef.add({...obj,creadoEn:firebase.firestore.FieldValue.serverTimestamp()});setOk();}
+async function dbAdd(obj){
+  setSaving();
+  // Calcular el siguiente número de orden para este mes
+  const snap = await colRef.where('mes','==',obj.mes).orderBy('orden','desc').limit(1).get();
+  const nextOrden = snap.empty ? 0 : (snap.docs[0].data().orden || 0) + 1;
+  await colRef.add({...obj, orden:nextOrden, creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+  setOk();
+}
 async function dbUpdate(fireId,patch){setSaving();await colRef.doc(fireId).update(patch);setOk();}
 async function dbDelete(fireId){setSaving();await colRef.doc(fireId).delete();setOk();}
 
