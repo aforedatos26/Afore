@@ -267,15 +267,7 @@ tr.is-new{animation:flash 2.5s ease forwards;}
       </table>
     </div>
   </div>
-  <div id="foot-note">☁️ Datos guardados en Firebase · sincronización en tiempo real</div>
-
-  <!-- MIGRATION BANNER -->
-  <div id="mig-banner" class="hidden" style="margin-top:12px;background:#FEF9C3;border:1.5px solid #CA8A04;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-    <div style="font-size:13px;font-weight:700;color:#713F12;">📦 Tienes clientes guardados en la versión anterior</div>
-    <div style="font-size:12px;color:#92400E;">Importa tus clientes a Firebase para no perderlos. Solo necesitas hacerlo una vez.</div>
-    <button id="mig-btn" onclick="migrarDatos()" style="background:#D97706;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">📥 Importar mis clientes a Firebase</button>
-  </div>
-</div>
+  <div id="foot-note">☁️ Datos en Firebase · sincronización en tiempo real</div>
 
 <!-- PICKER SHEET -->
 <div id="picker-ov" class="overlay hidden" onclick="if(event.target===this)closePicker()">
@@ -546,8 +538,9 @@ function startListener() {
     document.getElementById('sync').classList.remove('saving','error');
     renderTabs();
     render(newIds);
-    // Seed Abril 2026 una sola vez, ya con Firebase listo
+    // Seed una sola vez, ya con Firebase listo
     seedAbril2026();
+    seedMayo2026();
   }, err => {
     console.error(err);
     document.getElementById('sync').classList.add('error');
@@ -858,6 +851,57 @@ async function confirmDel(){await dbDelete(delId);closeDel();}
 
 
 
+
+/* ══════════════════════════════════════
+   SEED MAYO 2026 — se ejecuta una sola vez
+══════════════════════════════════════ */
+const MAYO_CLIENTES = [
+  {cliente:'Aurelio Ramos Cerrano',   curp:'RASA980925HVZMRR06'},
+  {cliente:'Luis Ruben Cuellqs',      curp:'CUML870708HVZLRS08'},
+  {cliente:'Diana Lisbeth',           curp:'RUHD800411MVZZRN00'},
+  {cliente:'Eduardo Sosa del Valle',  curp:'SOVE781013HVZSLD06'},
+  {cliente:'Getulio Rodriguez',       curp:'ROMG810718HVZDNT02'},
+  {cliente:'Luis Javier Solano',      curp:'SOAL960415HVZLSS01'},
+  {cliente:'Erika Ruiz',              curp:'RUCE830214MVZZRR06'},
+  {cliente:'Rodrigo Regueyra',        curp:'REMR941019HVZGLD06'},
+  {cliente:'Margarita Herrera',       curp:'HEGM680802MTSRNR00'},
+  {cliente:'Carlos Daniel Moreno',    curp:'MOCC960721HVZRRR05'},
+  {cliente:'Vicente Garcia',          curp:'GAJV910831HVZRMC02'},
+  {cliente:'Jose Francisco',          curp:'GAPF751226HVZRRR08'},
+  {cliente:'Cesar Toto Lima',         curp:'TOLC890115HVZTMS03'},
+  {cliente:'Aldo Baldo',              curp:'BARA970707HVZLDL01'},
+  {cliente:'Marlen Perez',            curp:'PEHM991116MVZRRR00'},
+  {cliente:'Prudencio Lopez',         curp:'LOMP681027HVZPRR00'},
+  {cliente:'Eriberto Lopez',          curp:'LOLE881029HVZPZR08'},
+  {cliente:'Jose Luis Atilano',       curp:'AIRL730602HVZTDS05'},
+  {cliente:'Anguelli de Jesus',       curp:'VAHA990314MVZLRN08'},
+];
+
+async function seedMayo2026() {
+  if (localStorage.getItem('mayo2026_seed')) return;
+  try {
+    const batch = db.batch();
+    MAYO_CLIENTES.forEach(c => {
+      const ref = colRef.doc();
+      batch.set(ref, {
+        cliente:  c.cliente,
+        curp:     c.curp,
+        afore:    'Sin asignar',
+        alta:     '',
+        status:   'desactualizado',
+        pagado:   false,
+        mes:      'Mayo 2026',
+        creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    await batch.commit();
+    localStorage.setItem('mayo2026_seed', '1');
+    console.log('✅ 19 clientes de Mayo 2026 importados');
+  } catch(e) {
+    console.error('Error seed Mayo:', e);
+  }
+}
+
 /* ══════════════════════════════════════
    SEED ABRIL 2026 — se ejecuta una sola vez
 ══════════════════════════════════════ */
@@ -910,15 +954,6 @@ async function seedAbril2026() {
   }
 }
 
-/* ══════════════════════════════════════
-   MIGRACIÓN DESDE VERSIÓN ANTERIOR
-══════════════════════════════════════ */
-async function migrarDatos() {
-  const raw = localStorage.getItem('afore_v6');
-  if (!raw) {
-    alert('No se encontraron datos en este navegador.\n\nAbre este archivo en el mismo celular/navegador donde usabas la app anterior.');
-    return;
-  }
   let parsed;
   try { parsed = JSON.parse(raw); } catch(e) { alert('Error leyendo datos.'); return; }
   const { data } = parsed;
@@ -952,7 +987,6 @@ async function migrarDatos() {
   try {
     await batch.commit();
     localStorage.setItem('afore_migrado', '1');
-    document.getElementById('mig-banner').classList.add('hidden');
     alert(`✅ ¡Listo! Se importaron ${count} cliente(s) a Firebase.`);
   } catch(e) {
     console.error(e);
@@ -961,19 +995,11 @@ async function migrarDatos() {
     btn.disabled = false;
   }
 }
-
-function checkMigration() {
-  const yaMigrado = localStorage.getItem('afore_migrado');
-  const hayDatos  = localStorage.getItem('afore_v6');
-  if (!yaMigrado && hayDatos) {
-    document.getElementById('mig-banner').classList.remove('hidden');
-  }
 }
 
 /* START */
 buildLegend();
 init();
-setTimeout(checkMigration, 1800);
 </script>
 </body>
 </html>
