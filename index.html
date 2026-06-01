@@ -478,12 +478,14 @@ async function doGoogleLogin(){
 /* FIRESTORE LISTENER */
 function startListener(){
   if(unsub)unsub();
-  unsub=colRef.orderBy('orden','asc').onSnapshot(snap=>{
+  unsub=colRef.onSnapshot(snap=>{
     const newIds=new Set();
     snap.docChanges().forEach(ch=>{if(ch.type==='added'&&knownIds.size>0)newIds.add(ch.doc.id);});
     clients=[];
     const mesSet=new Set();
     snap.forEach(doc=>{const d=doc.data();clients.push({fireId:doc.id,...d});if(d.mes)mesSet.add(d.mes);knownIds.add(doc.id);});
+    // Ordenar por campo 'orden' (número de fila original)
+    clients.sort((a,b)=>(a.orden??999)-(b.orden??999));
     const ordered=[];
     [2025,2026,2027,2028].forEach(y=>MESES.forEach(m=>{const k=`${m} ${y}`;if(mesSet.has(k))ordered.push(k);}));
     months=ordered.length?ordered:[mesNow()];
