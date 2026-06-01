@@ -546,6 +546,8 @@ function startListener() {
     document.getElementById('sync').classList.remove('saving','error');
     renderTabs();
     render(newIds);
+    // Seed Abril 2026 una sola vez, ya con Firebase listo
+    seedAbril2026();
   }, err => {
     console.error(err);
     document.getElementById('sync').classList.add('error');
@@ -854,6 +856,59 @@ function askDel(fireId){delId=fireId;document.getElementById('del-ov').classList
 function closeDel(){document.getElementById('del-ov').classList.add('hidden');}
 async function confirmDel(){await dbDelete(delId);closeDel();}
 
+
+
+/* ══════════════════════════════════════
+   SEED ABRIL 2026 — se ejecuta una sola vez
+══════════════════════════════════════ */
+const ABRIL_CLIENTES = [
+  {cliente:'Evaristo Carbajal',           curp:'CAME901117HVZRNV06', status:'cancelado'},
+  {cliente:'Rey David Soto',              curp:'BASR921229HVZRTY00', status:'desactualizado'},
+  {cliente:'Maria del Carmen Navarrete',  curp:'NAEC800522MVZVSR01', status:'cancelado'},
+  {cliente:'Rigoberto Cruz Lopez',        curp:'CULR830604HCSRPG02', status:'desactualizado'},
+  {cliente:'Julio Huerta Hernandez',      curp:'HUHJ941008HVZRRL15', status:'cancelado'},
+  {cliente:'Jose Antonio Reyes',          curp:'REGA720504HVZYNN05', status:'cancelado'},
+  {cliente:'Miguel Angel Sosa Hernandez', curp:'SOHM921128HVZSRG03', status:'desactualizado'},
+  {cliente:'Samuel Vazquez Galicia',      curp:'VAGS781031HPLZLM06', status:'desactualizado'},
+  {cliente:'Iray Sanchez Trujillo',       curp:'SATI761013MVZNRR06', status:'desactualizado'},
+  {cliente:'Paula Quezada Cortez',        curp:'QUCP710622MDFZRL08', status:'desactualizado'},
+  {cliente:'Oscar Colorado Valdivia',     curp:'COVO780224HVZLLS00', status:'cancelado'},
+  {cliente:'David Nery Flores',           curp:'NEFD861005HVZRLV00', status:'desactualizado'},
+  {cliente:'Natanael',                    curp:'RIDN860810HVZNMT00', status:'desactualizado'},
+  {cliente:'Arturo Ruiz',                 curp:'RUPA770706HVZZRR01', status:'actualizado'},
+  {cliente:'Domingo Salamanca',           curp:'SAND931007HVZLVM00', status:'enviado'},
+  {cliente:'Francisco Amador',            curp:'AAQF900903HVZMVR03', status:'actualizado'},
+  {cliente:'Aurelio Vallejo',             curp:'VXCA780920HVZLRR06', status:'actualizado'},
+  {cliente:'Francisco Solis',             curp:'SOGI831203HVZLRS05', status:'actualizado'},
+  {cliente:'Ivan Domingo',                curp:'DORI930426HVZMMV00', status:'desactualizado'},
+  {cliente:'Ricardo Cazarin',             curp:'CAHR990429HOCZSC09', status:'desactualizado'},
+];
+
+async function seedAbril2026() {
+  // Solo corre una vez
+  if (localStorage.getItem('abril2026_seed')) return;
+  try {
+    const batch = db.batch();
+    ABRIL_CLIENTES.forEach(c => {
+      const ref = colRef.doc();
+      batch.set(ref, {
+        cliente:  c.cliente,
+        curp:     c.curp,
+        afore:    'Sin asignar',
+        alta:     '',
+        status:   c.status,
+        pagado:   false,
+        mes:      'Abril 2026',
+        creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    await batch.commit();
+    localStorage.setItem('abril2026_seed', '1');
+    console.log('✅ 20 clientes de Abril 2026 importados');
+  } catch(e) {
+    console.error('Error seed Abril:', e);
+  }
+}
 
 /* ══════════════════════════════════════
    MIGRACIÓN DESDE VERSIÓN ANTERIOR
