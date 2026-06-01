@@ -128,6 +128,15 @@ tr.is-new{animation:flash 2.5s ease forwards;}
 
 .cell{padding:11px 12px;min-height:48px;display:flex;align-items:center;cursor:pointer;position:relative;user-select:none;}
 .cell:active{background:rgba(37,99,235,.08);}
+/* Sticky first column */
+th:first-child{position:sticky;left:0;z-index:3;background:#1E293B;}
+td:first-child{position:sticky;left:0;z-index:2;}
+td:first-child .cell{background:inherit;}
+/* Drag handle */
+.drag-handle{cursor:grab;padding:0 8px 0 4px;color:#9CA3AF;font-size:18px;flex-shrink:0;touch-action:none;}
+.drag-handle:active{cursor:grabbing;}
+tr.dragging{opacity:.4;}
+tr.drag-over{border-top:2.5px solid #2563EB !important;}
 .mono-txt{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.04em;}
 .tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
 .tdot{width:6px;height:6px;border-radius:50%;}
@@ -137,8 +146,7 @@ tr.is-new{animation:flash 2.5s ease forwards;}
 .del-btn{background:none;border:none;cursor:pointer;padding:6px 8px;border-radius:6px;font-size:16px;}
 .del-btn:active{background:rgba(0,0,0,.1);}
 #foot-note{margin-top:10px;font-size:11px;color:#9CA3AF;text-align:right;}
-@media(max-width:700px){
-  table{font-size:11px;min-width:0;width:100%;}
+
   .cell{padding:7px 6px;min-height:36px;}
   th{padding:7px 6px;}
   .tag{padding:2px 6px;font-size:10px;}
@@ -771,7 +779,8 @@ function render(newIds){
       div.addEventListener('click',()=>onCellTap(c.fireId,field));
       td.appendChild(div);return td;
     };
-    tr.appendChild(mkTd('cliente',`<span style="font-size:13px;font-weight:700;color:${cfg.text}">${esc(c.cliente)}</span>`));
+    tr.dataset.fireId = c.fireId;
+    tr.appendChild(mkTd('cliente',`<span class="drag-handle" title="Arrastrar">⠿</span><span style="font-size:13px;font-weight:700;color:${cfg.text}">${esc(c.cliente)}</span>`));
     tr.appendChild(mkTd('curp',`<span class="mono-txt" style="color:${cfg.text};opacity:.8">${esc(c.curp)||'<span style="opacity:.3">—</span>'}</span>`));
     tr.appendChild(mkTd('afore',`<span style="font-size:13px;font-weight:600;color:${cfg.text}">${esc(c.afore)}</span>`));
     tr.appendChild(mkTd('status',`<span class="tag" style="background:${cfg.bbg};color:${cfg.btxt};border:1.5px solid ${cfg.border}"><span class="tdot" style="background:${cfg.dot}"></span>${cfg.label}</span>`));
@@ -793,6 +802,7 @@ function render(newIds){
     const btn=document.createElement('button');btn.className='del-btn';btn.textContent='🗑️';
     btn.addEventListener('click',()=>askDel(c.fireId));
     dX.appendChild(btn);tdX.appendChild(dX);tr.appendChild(tdX);
+    addDragToRow(tr, c.fireId);
     tbody.appendChild(tr);
   });
 }
@@ -1026,6 +1036,91 @@ function checkMigration() {
   if (!yaMigrado && hayDatos) {
     document.getElementById('mig-banner').classList.remove('hidden');
   }
+}
+
+
+/* ══════════════════════════════════════
+   DRAG & DROP REORDER
+══════════════════════════════════════ */
+let dragSrc = null;
+
+function addDragToRow(tr, fireId) {
+  const handle = tr.querySelector('.drag-handle');
+  if (!handle) return;
+
+  // ── Desktop drag ──
+  tr.draggable = true;
+  tr.addEventListener('dragstart', e => {
+    dragSrc = fireId;
+    tr.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  tr.addEventListener('dragend', () => tr.classList.remove('dragging'));
+  tr.addEventListener('dragover', e => { e.preventDefault(); tr.classList.add('drag-over'); });
+  tr.addEventListener('dragleave', () => tr.classList.remove('drag-over'));
+  tr.addEventListener('drop', e => {
+    e.preventDefault();
+    tr.classList.remove('drag-over');
+    if (dragSrc && dragSrc !== fireId) reorderRows(dragSrc, fireId);
+  });
+
+  // ── Mobile touch drag ──
+  let startY = 0, isDragging = false, clone = null;
+  handle.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    isDragging = false;
+    dragSrc = fireId;
+  }, {passive: true});
+
+  handle.addEventListener('touchmove', e => {
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dy > 8) isDragging = true;
+    if (!isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    // Find row under finger
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetTr = el?.closest('tbody tr');
+    document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('drag-over'));
+    if (targetTr && targetTr !== tr) targetTr.classList.add('drag-over');
+  }, {passive: false});
+
+  handle.addEventListener('touchend', e => {
+    document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('drag-over'));
+    if (!isDragging) return;
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetTr = el?.closest('tbody tr');
+    if (targetTr) {
+      const targetId = targetTr.dataset.fireId;
+      if (targetId && targetId !== dragSrc) reorderRows(dragSrc, targetId);
+    }
+    isDragging = false;
+  });
+}
+
+async function reorderRows(srcId, dstId) {
+  // Get current list for this month
+  const list = clients.filter(c => c.mes === cur).sort((a,b) => (a.orden??9999)-(b.orden??9999));
+  const srcIdx = list.findIndex(c => c.fireId === srcId);
+  const dstIdx = list.findIndex(c => c.fireId === dstId);
+  if (srcIdx === -1 || dstIdx === -1) return;
+
+  // Move src to dst position
+  const [moved] = list.splice(srcIdx, 1);
+  list.splice(dstIdx, 0, moved);
+
+  // Update orden in Firebase for all affected rows
+  setSaving();
+  const batch = db.batch();
+  list.forEach((c, i) => {
+    if (c.orden !== i) {
+      batch.update(colRef.doc(c.fireId), { orden: i });
+      c.orden = i; // update local
+    }
+  });
+  await batch.commit();
+  setOk();
 }
 
 /* START */
