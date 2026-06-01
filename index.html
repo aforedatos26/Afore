@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AFORE</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
@@ -137,6 +137,13 @@ tr.is-new{animation:flash 2.5s ease forwards;}
 .del-btn{background:none;border:none;cursor:pointer;padding:6px 8px;border-radius:6px;font-size:16px;}
 .del-btn:active{background:rgba(0,0,0,.1);}
 #foot-note{margin-top:10px;font-size:11px;color:#9CA3AF;text-align:right;}
+@media(max-width:600px){
+  table{font-size:11px;}
+  .cell{padding:8px 8px;min-height:40px;}
+  th{padding:8px 8px;}
+  .tag{padding:3px 7px;font-size:10px;}
+  .chip{min-width:46px;padding:3px 7px;font-size:10px;}
+}
 
 /* SHEETS */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;backdrop-filter:blur(2px);}
