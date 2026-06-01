@@ -513,9 +513,8 @@ function setSaving(){document.getElementById('sync').className='saving';}
 function setOk(){document.getElementById('sync').className='';}
 async function dbAdd(obj){
   setSaving();
-  // Calcular el siguiente número de orden para este mes
-  const snap = await colRef.where('mes','==',obj.mes).orderBy('orden','desc').limit(1).get();
-  const nextOrden = snap.empty ? 0 : (snap.docs[0].data().orden || 0) + 1;
+  // El orden es el total de clientes en ese mes
+  const nextOrden = clients.filter(c=>c.mes===obj.mes).length;
   await colRef.add({...obj, orden:nextOrden, creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
   setOk();
 }
